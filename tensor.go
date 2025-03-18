@@ -1,9 +1,10 @@
 package nngo
 
 import (
-    "fmt"
-    "reflect"
-    "strings"
+	"fmt"
+	"math/rand"
+	"reflect"
+	"strings"
 )
 
 /*
@@ -13,6 +14,9 @@ Module requires three main structs/interfaces: Tensor, Context & Function
 - Context: struct to save information between forward & backward
 - Function: wrapper for operations between tensors
 */
+
+// set seed
+var Seed int64 = 22
 
 // Number is the interface for generic types of numbers
 type Number interface {
@@ -118,6 +122,63 @@ func (t *TensorModule[T]) Ones(shape []int, flag ...bool) *Tensor[T] {
     size := computeSize(shape)
     data := make([]T, size)
     for i := range data { data[i] = 1 }
+    strides := computeStrides(shape)
+    return &Tensor[T]{
+        Data: data,
+        Shape: shape,
+        Strides: strides,
+        RequiresGrad: needGrad,
+    }
+}
+
+// setSeed
+func setSeed(seed int64) *rand.Rand {
+    source := rand.NewSource(seed)
+    return rand.New(source)
+}
+
+// RandInt
+func (t *TensorModule[T]) RandInt(shape []int, flag ...bool) *Tensor[T] {
+    needGrad := false
+    if len(flag) == 1 { needGrad = flag[0] }
+    size := computeSize(shape)
+    data := make([]T, size)
+    r := setSeed(Seed)
+    for i := range data { data[i] = T(r.Int31()) }
+    strides := computeStrides(shape)
+    return &Tensor[T]{
+        Data: data,
+        Shape: shape,
+        Strides: strides,
+        RequiresGrad: needGrad,
+    }
+}
+
+// RandN
+func (t *TensorModule[T]) RandN(shape []int, flag ...bool) *Tensor[T] {
+    needGrad := false
+    if len(flag) == 1 { needGrad = flag[0] }
+    size := computeSize(shape)
+    data := make([]T, size)
+    r := setSeed(Seed)
+    for i := range data { data[i] = T(r.Float32()) }
+    strides := computeStrides(shape)
+    return &Tensor[T]{
+        Data: data,
+        Shape: shape,
+        Strides: strides,
+        RequiresGrad: needGrad,
+    }
+}
+
+// Uniform
+func (t *TensorModule[T]) Uniform(shape []int, flag ...bool) *Tensor[T] {
+    needGrad := false
+    if len(flag) == 1 { needGrad = flag[0] }
+    size := computeSize(shape)
+    data := make([]T, size)
+    r := setSeed(Seed)
+    for i := range data { data[i] = T(2*r.Float32()-1) }
     strides := computeStrides(shape)
     return &Tensor[T]{
         Data: data,
