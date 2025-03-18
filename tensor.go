@@ -23,9 +23,6 @@ type Number interface {
     ~int8 | ~int16 | ~int32 | ~float32
 }
 
-// TensorMod for handling type information
-type TensorModule[T Number] struct {}
-
 // Tensor is the most important structure
 type Tensor[T Number] struct {
     // data
@@ -139,7 +136,7 @@ func NewTensor[T Number](shape []int, flag ...bool) *Tensor[T] {
 }
 
 // Zeros
-func (t *TensorModule[T]) Zeros(shape []int, flag ...bool) *Tensor[T] {
+func (t *Tensor[T]) Zeros(shape []int, flag ...bool) *Tensor[T] {
     needGrad := false
     if len(flag) == 1 { needGrad = flag[0] }
     size := computeSize(shape)
@@ -154,7 +151,7 @@ func (t *TensorModule[T]) Zeros(shape []int, flag ...bool) *Tensor[T] {
 }
 
 // Ones
-func (t *TensorModule[T]) Ones(shape []int, flag ...bool) *Tensor[T] {
+func (t *Tensor[T]) Ones(shape []int, flag ...bool) *Tensor[T] {
     needGrad := false
     if len(flag) == 1 { needGrad = flag[0] }
     size := computeSize(shape)
@@ -175,25 +172,8 @@ func setSeed(seed int64) *rand.Rand {
     return rand.New(source)
 }
 
-// RandInt
-func (t *TensorModule[T]) RandInt(shape []int, flag ...bool) *Tensor[T] {
-    needGrad := false
-    if len(flag) == 1 { needGrad = flag[0] }
-    size := computeSize(shape)
-    data := make([]T, size)
-    r := setSeed(Seed)
-    for i := range data { data[i] = T(r.Int31()) }
-    strides := computeStrides(shape)
-    return &Tensor[T]{
-        Data: data,
-        Shape: shape,
-        Strides: strides,
-        RequiresGrad: needGrad,
-    }
-}
-
 // RandN
-func (t *TensorModule[T]) RandN(shape []int, flag ...bool) *Tensor[T] {
+func (t *Tensor[T]) RandN(shape []int, flag ...bool) *Tensor[T] {
     needGrad := false
     if len(flag) == 1 { needGrad = flag[0] }
     size := computeSize(shape)
@@ -210,7 +190,7 @@ func (t *TensorModule[T]) RandN(shape []int, flag ...bool) *Tensor[T] {
 }
 
 // Uniform
-func (t *TensorModule[T]) Uniform(shape []int, flag ...bool) *Tensor[T] {
+func (t *Tensor[T]) Uniform(shape []int, flag ...bool) *Tensor[T] {
     needGrad := false
     if len(flag) == 1 { needGrad = flag[0] }
     size := computeSize(shape)

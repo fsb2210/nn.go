@@ -7,35 +7,28 @@ import (
 
 func TestZeros(t *testing.T) {
     shape := []int{3}
-    torch := TensorModule[int32]{}
-    a := torch.Zeros(shape)
-    fmt.Printf("%+v\n", a)
+    tensor := Tensor[int32]{}
+    z := tensor.Zeros(shape)
+    fmt.Printf("%+v\n", z)
 }
 
 func TestOnes(t *testing.T) {
     shape := []int{3}
-    torch := TensorModule[float32]{}
-    a := torch.Ones(shape)
-    fmt.Printf("%+v\n", a)
+    tensor := Tensor[int32]{}
+    o := tensor.Ones(shape)
+    fmt.Printf("%+v\n", o)
 }
 
 func TestRandN(t *testing.T) {
     shape := []int{2, 2}
-    torch := TensorModule[float32]{}
-    a := torch.RandN(shape)
+    tensor := Tensor[float32]{}
+    a := tensor.RandN(shape)
     fmt.Printf("%+v\n", a)
 }
 
 func TestUniform(t *testing.T) {
     shape := []int{2, 2}
-    torch := TensorModule[float32]{}
-    a := torch.Uniform(shape)
-    fmt.Printf("%+v\n", a)
-}
-
-func TestRandInt(t *testing.T) {
-    shape := []int{2, 2}
-    torch := TensorModule[int32]{}
-    a := torch.RandInt(shape)
+    tensor := Tensor[float32]{}
+    a := tensor.Uniform(shape)
     fmt.Printf("%+v\n", a)
 }
