@@ -39,19 +39,29 @@ type Tensor[T Number] struct {
     // grad tensor
     Grad *Tensor[T]
     // function producing operation
-    GradFn *Function[T]
+    GradFn Function[T]
 }
 
 // Context holds information between passes
 type Context[T Number] struct {
-    SavedTensor []T
-    SavedValues []any
+    SavedTensor []*Tensor[T]
+    SavedShapes []any
+}
+func (ctx *Context[T]) SaveTensorsForBackward(inputs ...*Tensor[T]) {
+    for _, input := range inputs {
+        ctx.SavedTensor = append(ctx.SavedTensor, input)
+    }
+}
+func (ctx *Context[T]) SaveShapesForBackward(inputs...[]int) {
+    for _, input := range inputs {
+        ctx.SavedShapes = append(ctx.SavedShapes, input)
+    }
 }
 
 // Function interface of operations
 type Function[T Number] interface {
-    Forward(ctx *Context[T], inputs ...*Tensor[T]) *Tensor[T]
-    Backward(ctx *Context[T], gradOutput *Tensor[T]) *Tensor[T]
+    Forward(ctx *Context[T], inputs ...*Tensor[T]) (*Tensor[T], error)
+    Backward(ctx *Context[T], gradOutput *Tensor[T]) (*Tensor[T], error)
 }
 
 /* helper functions */
@@ -99,6 +109,34 @@ func (t *Tensor[T]) String() string {
 }
 
 /* creation functions */
+
+// Helper function to create a new tensor with the same shape as another
+func NewTensorLike[T Number](t *Tensor[T]) *Tensor[T] {
+    return NewTensor[T](t.Shape)
+}
+
+// NewTensor creates a new tensor with the given shape
+func NewTensor[T Number](shape []int, flag ...bool) *Tensor[T] {
+    needGrad := false
+    if len(flag) == 1 { needGrad = flag[0] }
+    size := 1
+    for _, dim := range shape { size *= dim }
+
+    // Calculate strides
+    strides := make([]int, len(shape))
+    stride := 1
+    for i := len(shape) - 1; i >= 0; i-- {
+        strides[i] = stride
+        stride *= shape[i]
+    }
+
+    return &Tensor[T]{
+        Data:  make([]T, size),
+        Shape: shape,
+        Strides: strides,
+        RequiresGrad: needGrad,
+    }
+}
 
 // Zeros
 func (t *TensorModule[T]) Zeros(shape []int, flag ...bool) *Tensor[T] {
