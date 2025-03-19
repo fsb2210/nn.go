@@ -31,6 +31,8 @@ type Tensor[T Number] struct {
     Shape []int
     // strides
     Strides []int
+    // size
+    Size int
     // flag to compute grad for backward propagation
     RequiresGrad bool
     // grad tensor
@@ -57,31 +59,11 @@ func (ctx *Context[T]) SaveShapesForBackward(inputs...[]int) {
 
 // Function interface of operations
 type Function[T Number] interface {
-    Forward(ctx *Context[T], inputs ...*Tensor[T]) (*Tensor[T], error)
-    Backward(ctx *Context[T], gradOutput *Tensor[T]) (*Tensor[T], error)
+    Forward(args []any, inputs ...*Tensor[T]) (*Tensor[T], error)
+    Backward(gradOutput *Tensor[T]) (*Tensor[T], error)
 }
 
 /* helper functions */
-
-// computeStrides
-func computeStrides(shape []int) []int {
-    strides := make([]int, len(shape))
-    val := 1
-    for i := len(shape)-1; i >= 0; i--{
-        strides[i] = val
-        val *= shape[i]
-    }
-    return strides
-}
-
-// computeSize
-func computeSize(shape []int) int {
-    size := 1
-    for _, dim := range shape {
-        size *= dim
-    }
-    return size
-}
 
 func (t *Tensor[T]) String() string {
     var sb strings.Builder
@@ -97,13 +79,32 @@ func (t *Tensor[T]) String() string {
 
     // Only show data for small tensors that are already materialized
     if t.Data != nil {
-        size := min(computeSize(t.Shape), 8)
+        size := min(ComputeSize(t.Shape), 8)
         // first 8 elements (or less)
         sb.WriteString(fmt.Sprintf("data=%v", t.Data[:size]))
     }
     sb.WriteString(")")
     return sb.String()
 }
+
+// At returns the value at the specified indices
+func (t *Tensor[T]) At(indices ...int) (T, error) {
+    if len(indices) != len(t.Shape) {
+        return 0, fmt.Errorf("number of indices doesn't match tensor dimensions")
+    }
+
+    index := 0 // t.offset
+    for i, idx := range indices {
+        if idx < 0 || idx >= t.Shape[i] {
+            return 0, fmt.Errorf("index %d out of bounds for dimension %d with size %d", idx, i, t.Shape[i])
+        }
+        index += idx * t.Strides[i]
+    }
+
+    return t.Data[index], nil
+}
+
+// BroadcastTo returns
 
 /* creation functions */
 
@@ -118,19 +119,13 @@ func NewTensor[T Number](shape []int, flag ...bool) *Tensor[T] {
     if len(flag) == 1 { needGrad = flag[0] }
     size := 1
     for _, dim := range shape { size *= dim }
-
-    // Calculate strides
-    strides := make([]int, len(shape))
-    stride := 1
-    for i := len(shape) - 1; i >= 0; i-- {
-        strides[i] = stride
-        stride *= shape[i]
-    }
-
+    // calculate strides
+    strides := ComputeStrides(shape) // make([]int, len(shape))
     return &Tensor[T]{
         Data:  make([]T, size),
         Shape: shape,
         Strides: strides,
+        Size: size,
         RequiresGrad: needGrad,
     }
 }
@@ -139,13 +134,14 @@ func NewTensor[T Number](shape []int, flag ...bool) *Tensor[T] {
 func (t *Tensor[T]) Zeros(shape []int, flag ...bool) *Tensor[T] {
     needGrad := false
     if len(flag) == 1 { needGrad = flag[0] }
-    size := computeSize(shape)
+    size := ComputeSize(shape)
     data := make([]T, size)
-    strides := computeStrides(shape)
+    strides := ComputeStrides(shape)
     return &Tensor[T]{
         Data: data,
         Shape: shape,
         Strides: strides,
+        Size: size,
         RequiresGrad: needGrad,
     }
 }
@@ -154,14 +150,15 @@ func (t *Tensor[T]) Zeros(shape []int, flag ...bool) *Tensor[T] {
 func (t *Tensor[T]) Ones(shape []int, flag ...bool) *Tensor[T] {
     needGrad := false
     if len(flag) == 1 { needGrad = flag[0] }
-    size := computeSize(shape)
+    size := ComputeSize(shape)
     data := make([]T, size)
     for i := range data { data[i] = 1 }
-    strides := computeStrides(shape)
+    strides := ComputeStrides(shape)
     return &Tensor[T]{
         Data: data,
         Shape: shape,
         Strides: strides,
+        Size: size,
         RequiresGrad: needGrad,
     }
 }
@@ -176,15 +173,16 @@ func setSeed(seed int64) *rand.Rand {
 func (t *Tensor[T]) RandN(shape []int, flag ...bool) *Tensor[T] {
     needGrad := false
     if len(flag) == 1 { needGrad = flag[0] }
-    size := computeSize(shape)
+    size := ComputeSize(shape)
     data := make([]T, size)
     r := setSeed(Seed)
     for i := range data { data[i] = T(r.Float32()) }
-    strides := computeStrides(shape)
+    strides := ComputeStrides(shape)
     return &Tensor[T]{
         Data: data,
         Shape: shape,
         Strides: strides,
+        Size: size,
         RequiresGrad: needGrad,
     }
 }
@@ -193,15 +191,16 @@ func (t *Tensor[T]) RandN(shape []int, flag ...bool) *Tensor[T] {
 func (t *Tensor[T]) Uniform(shape []int, flag ...bool) *Tensor[T] {
     needGrad := false
     if len(flag) == 1 { needGrad = flag[0] }
-    size := computeSize(shape)
+    size := ComputeSize(shape)
     data := make([]T, size)
     r := setSeed(Seed)
     for i := range data { data[i] = T(2*r.Float32()-1) }
-    strides := computeStrides(shape)
+    strides := ComputeStrides(shape)
     return &Tensor[T]{
         Data: data,
         Shape: shape,
         Strides: strides,
+        Size: size,
         RequiresGrad: needGrad,
     }
 }
