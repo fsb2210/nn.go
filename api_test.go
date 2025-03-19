@@ -1,9 +1,37 @@
 package nngo
 
 import (
-	"reflect"
-	"testing"
+    "reflect"
+    "testing"
 )
+
+func TestTranspose(t *testing.T) {
+    a := NewTensor[float32]([]int{2, 3})
+    a.Data = []float32{1, 2, 3, 4, 5, 6}
+    expectedShape := []int{3, 2}
+    expectedStrides := []int{1, 3}
+    t.Run("Function API", func(t *testing.T) {
+        a.RequiresGrad = true
+        newOrder := []int{1, 0}
+        result := Transpose(a, newOrder)
+        // check data
+        if !reflect.DeepEqual(result.Data, a.Data) {
+            t.Errorf("Transpose result incorrect, got: %v, want: %v", result.Data, a.Data)
+        }
+        // check shape
+        if !reflect.DeepEqual(result.Shape, expectedShape) {
+            t.Errorf("Transpose shape incorrect, got: %v, want: %v", result.Shape, expectedShape)
+        }
+        // check strides
+        if !reflect.DeepEqual(result.Strides, expectedStrides) {
+            t.Errorf("Transpose strides incorrect, got: %v, want: %v", result.Strides, expectedStrides)
+        }
+        // check that GradFn is not nil when RequiresGrad is true
+        if result.GradFn == nil {
+            t.Errorf("GradFn should not be nil when RequiresGrad is true")
+        }
+    })
+}
 
 func TestReshape(t *testing.T) {
     a := NewTensor[float32]([]int{2, 3})

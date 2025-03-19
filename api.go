@@ -1,5 +1,21 @@
 package nngo
 
+// Tranpose
+func Transpose[T Number](self *Tensor[T], order []int) *Tensor[T] {
+    ctx := &Context[T]{}
+    op := &TransposeFn[T]{ Ctx: ctx }
+    orderI := make([]any, len(order))
+    for i, dim := range order { orderI[i] = dim }
+    // call to forward prop
+    result, err := op.Forward(orderI, self)
+    if err != nil { panic("error in Reshape operation") }
+    if self.RequiresGrad {
+        result.RequiresGrad = true
+        result.GradFn = op
+    }
+    return result
+}
+
 // Reshape
 func Reshape[T Number](self *Tensor[T], shape []int) *Tensor[T] {
     ctx := &Context[T]{}
