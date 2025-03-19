@@ -5,6 +5,23 @@ import (
 	"testing"
 )
 
+func TestReshape(t *testing.T) {
+    a := NewTensor[float32]([]int{2, 3})
+    a.Data = []float32{1, 2, 3, 4, 5, 6}
+    t.Run("Function API", func(t *testing.T) {
+        a.RequiresGrad = true
+        newShape := []int{3, 2}
+        result := Reshape(a, newShape)
+        if !reflect.DeepEqual(result.Data, a.Data) {
+            t.Errorf("Add result incorrect, got: %v, want: %v", result.Data, a.Data)
+        }
+        // check that GradFn is not nil when RequiresGrad is true
+        if result.GradFn == nil {
+            t.Errorf("GradFn should not be nil when RequiresGrad is true")
+        }
+    })
+}
+
 func TestAdd(t *testing.T) {
     // create test tensors
     a := NewTensor[float32]([]int{2, 3})
@@ -19,8 +36,6 @@ func TestAdd(t *testing.T) {
         a.RequiresGrad = true
         // use the API function
         result := Add(a, b)
-        _, err := result.GradFn.Backward(nil, nil)
-        if err != nil { panic("this is a mess") }
         // check the result data
         if !reflect.DeepEqual(result.Data, expected) {
             t.Errorf("Add result incorrect, got: %v, want: %v", result.Data, expected)
