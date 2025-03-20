@@ -5,6 +5,30 @@ import (
     "testing"
 )
 
+func TestBroadcast(t *testing.T) {
+    a := NewTensor[float32]([]int{2, 3})
+    a.Data = []float32{1, 2, 3, 4, 5, 6}
+    expectedShape := []int{1, 1, 2, 3}
+    expectedStrides := []int{0, 0, 3, 1}
+    t.Run("Method API", func(t *testing.T) {
+        a.RequiresGrad = true
+        newShape := []int{2, 3, 1, 1}
+        result := a.BroadcastTo(newShape)
+        // check data
+        if !reflect.DeepEqual(result.Data, a.Data) {
+            t.Errorf("Transpose result incorrect, got: %v, want: %v", result.Data, a.Data)
+        }
+        // check shape
+        if !reflect.DeepEqual(result.Shape, expectedShape) {
+            t.Errorf("Transpose shape incorrect, got: %v, want: %v", result.Shape, expectedShape)
+        }
+        // check strides
+        if !reflect.DeepEqual(result.Strides, expectedStrides) {
+            t.Errorf("Transpose strides incorrect, got: %v, want: %v", result.Strides, expectedStrides)
+        }
+    })
+}
+
 func TestTranspose(t *testing.T) {
     a := NewTensor[float32]([]int{2, 3})
     a.Data = []float32{1, 2, 3, 4, 5, 6}

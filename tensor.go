@@ -204,3 +204,38 @@ func (t *Tensor[T]) Uniform(shape []int, flag ...bool) *Tensor[T] {
         RequiresGrad: needGrad,
     }
 }
+
+/* utils */
+
+func (t *Tensor[T])BroadcastTo_(targetShape []int) *Tensor[T] {
+    if len(t.Shape) > len(targetShape) {
+        str := fmt.Sprintf("cannot broadcast to lower dimension. have: %d, want %d", len(t.Shape), len(targetShape))
+        panic(str)
+    }
+
+    // prepend singleton dimensions to match the length of targetShape
+    shapeOffset := len(targetShape) - len(t.Shape)
+
+    newShape := make([]int, len(targetShape))
+    newStrides := make([]int, len(targetShape))
+    if shapeOffset > 0 {
+        paddedShape := make([]int, len(targetShape))
+        paddedStrides := make([]int, len(targetShape))
+
+        for i := range shapeOffset {
+            paddedShape[i] = 1
+            paddedStrides[i] = 0
+        }
+
+        copy(paddedShape[shapeOffset:], t.Shape)
+        copy(paddedStrides[shapeOffset:], t.Strides)
+
+        newShape = paddedShape
+        newStrides = paddedStrides
+    }
+
+    nt := NewTensor[T](newShape, t.RequiresGrad)
+    nt.Data = t.Data
+    nt.Strides = newStrides
+    return nt
+}

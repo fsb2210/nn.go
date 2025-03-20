@@ -7,6 +7,8 @@ func (t *Tensor[T]) Mul(other *Tensor[T]) *Tensor[T] { return Mul(t, other) }
 func (t *Tensor[T]) Transpose(shape []int) *Tensor[T] { return Transpose(t, shape) }
 func (t *Tensor[T]) Reshape(shape []int) *Tensor[T] { return Reshape(t, shape) }
 
+func (t *Tensor[T]) BroadcastTo(shape []int) *Tensor[T] { return t.BroadcastTo_(shape) }
+
 /* functions API versions */
 
 // Tranpose
