@@ -1,5 +1,14 @@
 package nngo
 
+/* methods API versions */
+
+func (t *Tensor[T]) Add(other *Tensor[T]) *Tensor[T] { return Add(t, other) }
+func (t *Tensor[T]) Mul(other *Tensor[T]) *Tensor[T] { return Mul(t, other) }
+func (t *Tensor[T]) Transpose(shape []int) *Tensor[T] { return Transpose(t, shape) }
+func (t *Tensor[T]) Reshape(shape []int) *Tensor[T] { return Reshape(t, shape) }
+
+/* functions API versions */
+
 // Tranpose
 func Transpose[T Number](self *Tensor[T], order []int) *Tensor[T] {
     ctx := &Context[T]{}
@@ -52,5 +61,15 @@ func Add[T Number](self, other *Tensor[T]) *Tensor[T] {
     return result
 }
 
-// Method version of Add attached to Tensor struct
-func (t *Tensor[T]) Add(other *Tensor[T]) *Tensor[T] { return Add(t, other) }
+// Mul
+func Mul[T Number](self, other *Tensor[T]) *Tensor[T] {
+    ctx := &Context[T]{}
+    op := &MulFn[T]{ Ctx: ctx }
+    result, err := op.Forward([]any{}, self, other)
+    if err != nil { panic("error in Mul operation") }
+    if self.RequiresGrad || other.RequiresGrad {
+        result.RequiresGrad = true
+        result.GradFn = op
+    }
+    return result
+}
